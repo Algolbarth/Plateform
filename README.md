@@ -1,3 +1,3 @@
-# Plateform
+# 🏃‍➡️ Plateform
 
-A plateform game (mario like) inspired by the first New super mario bros level (on nintendo DS).
+A plateform game (mario like) inspired by the first New Super Mario Bros. on Nintendo DS and an original level.
