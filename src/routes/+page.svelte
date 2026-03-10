@@ -1,209 +1,118 @@
-<script>
-	import { Camera } from '../lib/Camera.js';
-	import { Character } from '../lib/Character.js';
-	import { goMenu, keyUpMenu, keyDownMenu, menu } from '../lib/Menu.js';
-	import { goGame, keyUpGame, keyDownGame, game } from '../lib/Game.js';
-	import { keyUpWin, keyDownWin, win } from '../lib/Win.js';
-	import { keyUpLoose, keyDownLoose, loose } from '../lib/Loose.js';
+<script lang="ts">
+  import { keyUpMenu, keyDownMenu, menu } from "../lib/interfaces/menu";
+  import { keyUpGame, keyDownGame, game } from "../lib/interfaces/game";
+  import { keyUpWin, keyDownWin, win } from "../lib/interfaces/win";
+  import { keyUpLoose, keyDownLoose, loose } from "../lib/interfaces/loose";
+  import { onMount } from "svelte";
+  import { System } from "../lib/system/class";
 
-	const System = {
-		objets: {
-			class: [],
-			instance: [],
-			get: function (name) {
-				for (let i = 0; i < this.instance.length; i++) {
-					if (this.instance[i].name == name) {
-						return this.class[i];
-					}
-				}
-			}
-		},
-		entities: {
-			class: [],
-			instance: [],
-			get: function (name) {
-				for (let i = 0; i < this.instance.length; i++) {
-					if (this.instance[i].name == name) {
-						return this.class[i];
-					}
-				}
-			}
-		},
-		maps: {
-			class: [],
-			instance: [],
-			get: function (name) {
-				for (let i = 0; i < this.instance.length; i++) {
-					if (this.instance[i].name == name) {
-						return new this.class[i](System);
-					}
-				}
-			},
-			define: function (name) {
-				System.map = this.get(name);
-			}
-		},
-		animation: {},
-		camera: {},
-		character: {},
-		map: {},
-		gravity: 0.4,
-		checkCollision: function (objet1, objet2) {
-			if (
-				objet1.x + objet1.width > objet2.x &&
-				objet1.x < objet2.x + objet2.width &&
-				objet1.y + objet1.height > objet2.y &&
-				objet1.y < objet2.y + objet2.height
-			) {
-				return true;
-			}
-		},
-		newGame: function (name) {
-			this.character = new Character();
-			this.camera = new Camera();
-			this.maps.define(name);
-			this.map.init();
-			goGame(System);
-		},
-		retry: function () {
-			this.newGame(this.map.name);
-		},
-		empty: function (color) {
-			this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-			this.ctx.fillStyle = color;
-			this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-		}
-	};
+  let system: System = new System();
+  let fpsInterval: number;
+  let startTime: number;
+  let now: number;
+  let then: number;
+  let elapsed: number;
 
-	import * as objetsList from '../lib/Objets';
-	for (const objet of Object.keys(objetsList)) {
-		const objetClass = objetsList[objet];
-		const objetInstance = new objetClass(System, []);
-		System.objets.class.push(objetClass);
-		System.objets.instance.push(objetInstance);
-	}
+  onMount(() => {
+    system.ctx = system.canvas.getContext("2d");
 
-	import * as entitiesList from '../lib/Entities';
-	for (const entity of Object.keys(entitiesList)) {
-		const entityClass = entitiesList[entity];
-		const entityInstance = new entityClass(System, []);
-		System.entities.class.push(entityClass);
-		System.entities.instance.push(entityInstance);
-	}
+    system.canvas.width = 1920;
+    system.canvas.height = 1080;
 
-	import * as mapsList from '../lib/Maps';
-	for (const map of Object.keys(mapsList)) {
-		const mapClass = mapsList[map];
-		const mapInstance = new mapClass(System);
-		System.maps.class.push(mapClass);
-		System.maps.instance.push(mapInstance);
-	}
+    document.addEventListener("keyup", keyUpHandler, false);
+    document.addEventListener("keydown", keyDownHandler, false);
 
-	import { onMount } from 'svelte';
+    startAnimating(60);
+  });
 
-	let fpsInterval, startTime, now, then, elapsed;
+  function startAnimating(fps: number) {
+    fpsInterval = 1000 / fps;
+    then = Date.now();
+    startTime = then;
+    animate();
+  }
 
-	onMount(() => {
-		System.ctx = System.canvas.getContext('2d');
+  function animate() {
+    requestAnimationFrame(animate);
+    now = Date.now();
+    elapsed = now - then;
 
-		System.canvas.width = 1920;
-		System.canvas.height = 1080;
+    if (elapsed > fpsInterval) {
+      then = now - (elapsed % fpsInterval);
 
-		document.addEventListener('keyup', keyUpHandler, false);
-		document.addEventListener('keydown', keyDownHandler, false);
+      switch (system.page.name) {
+        case "menu":
+          menu(system);
+          break;
+        case "game":
+          game(system);
+          break;
+        case "win":
+          win(system);
+          break;
+        case "loose":
+          loose(system);
+          break;
+      }
+    }
+  }
 
-		goMenu(System);
-		startAnimating(60);
-	});
+  function keyUpHandler(e: any) {
+    switch (system.page.name) {
+      case "menu":
+        keyUpMenu(system, e);
+        break;
+      case "game":
+        keyUpGame(system, e);
+        break;
+      case "win":
+        keyUpWin(system, e);
+        break;
+      case "loose":
+        keyUpLoose(system, e);
+        break;
+    }
+  }
 
-	function startAnimating(fps) {
-		fpsInterval = 1000 / fps;
-		then = Date.now();
-		startTime = then;
-		animate();
-	}
-
-	function animate() {
-		requestAnimationFrame(animate);
-		now = Date.now();
-		elapsed = now - then;
-
-		if (elapsed > fpsInterval) {
-			then = now - (elapsed % fpsInterval);
-
-			switch (System.page.name) {
-				case 'menu':
-					menu(System);
-					break;
-				case 'game':
-					game(System);
-					break;
-				case 'win':
-					win(System);
-					break;
-				case 'loose':
-					loose(System);
-					break;
-			}
-		}
-	}
-
-	function keyUpHandler(e) {
-		switch (System.page.name) {
-			case 'menu':
-				keyUpMenu(System, e);
-				break;
-			case 'game':
-				keyUpGame(System, e);
-				break;
-			case 'win':
-				keyUpWin(System, e);
-				break;
-			case 'loose':
-				keyUpLoose(System, e);
-				break;
-		}
-	}
-
-	function keyDownHandler(e) {
-		switch (System.page.name) {
-			case 'menu':
-				keyDownMenu(System, e);
-				break;
-			case 'game':
-				keyDownGame(System, e);
-				break;
-			case 'win':
-				keyDownWin(System, e);
-				break;
-			case 'loose':
-				keyDownLoose(System, e);
-				break;
-		}
-	}
+  function keyDownHandler(e: any) {
+    switch (system.page.name) {
+      case "menu":
+        keyDownMenu(system, e);
+        break;
+      case "game":
+        keyDownGame(system, e);
+        break;
+      case "win":
+        keyDownWin(system, e);
+        break;
+      case "loose":
+        keyDownLoose(system, e);
+        break;
+    }
+  }
 </script>
 
 <div id="html">
-	<div id="body">
-		<canvas bind:this={System.canvas}></canvas>
-	</div>
+  <div id="body">
+    <canvas bind:this={system.canvas}></canvas>
+  </div>
 </div>
 
 <style>
-	#html {
-		position: fixed;
-		width: 100vw;
-		height: 100vh;
-		top: 0;
-		left: 0;
-		
-		font-family: Verdana, Geneva, Tahoma, sans-serif;
-		font-weight: bold;
-		background: black;
-	}
+  #html {
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    top: 0;
+    left: 0;
 
-	canvas {
-		width: 100%;
-		height: 100%;
-	}
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-weight: bold;
+    background: black;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+  }
 </style>
